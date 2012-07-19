@@ -1,0 +1,63 @@
+// Introduction
+
+OOP PHP code for hierarchical many-to-many database model using PDO and with optional memcached integration
+
+
+// Installation
+
+Create your database using the included schema.sql file, fill out config.example.class.php and rename it to config.class.php, and start coding.
+
+
+// Description: Database Model
+
+Everything is an object in `objects`, and an object has a type and a name. An object can be of type User and with value Anastas. Objects can have attributes; a User object might have an attribute of type Permissions with value 0755, stored in `object_attributes`.
+
+Objects are related by associations, stored in `associations`. Associations are hierarchical, are made between objects, and can have a type. A Fruits object might be related to the Apple object by an associate type of Member.
+
+Associations can have attributes, which are stored in `association_attributes`. A message between two User objects might be stored as an association of type Message with parent the sender and child the recepient, and may have association attributes of type Subject and Body that contain the message subject and body, respectively.
+
+
+// Description: PHP Object Model
+
+There are several classes. The object class will be the one that makes use of the data in your database. As it has the basic functionality needed to implement the database model, it is suggested that you extend it instead of creating new objects from scratch. 
+
+- config
+
+Config is obvious, and is passed to the base constructor.
+
+- base
+
+Base just has a number of basic functions to be used by the other objects, suck as setting memcached keys (if memcached support has been enabled), logging errors to a file, and accessing session variables in such a way that there will not be a NOTICE if they haven't been set yet.
+
+- dbpdo
+
+Dbpdo extends base and is where the database connection/querying happens, including optionally checking memcached for a particular key and using the corresponding value instead of querying the database.
+
+- object
+
+Object is always constructed with a dbpdo object passed to it. If passed the $id constructor parameter, it will load information from row $id in `objects` for immediate use. It is suggested that you have a single dbpdo object and pass it to every object that is created so that they share the same connection. Look through the methods in the object class, which include getting the current object's parents or children, filtering those by type, adding and removing parents and children, updating attributes, and so on. 
+
+
+// Example
+
+$config = new config();
+$dbpdo = new dbpdo($config);
+
+$owner = new object($dbpdo, 14);
+$owner->get_children('user', 'member');
+
+foreach($owner->children['member'] as $user_id)
+{
+    $member = new user($owner->dbpdo, $user_id);
+    echo $member->value . ', since ' . $member->created;
+}
+
+
+// Technical comments
+
+Using PDO and prepared statements is great for security and supports multiple database types, though the object class presumes one that supports SQL. Memcached integration is available and makes increasing the speed of one's application very easy. Implemented functionality in the object class makes it easy to create a complex app by extending the object class for different object types.
+
+
+// Used in
+
+http://ureddit.com/
